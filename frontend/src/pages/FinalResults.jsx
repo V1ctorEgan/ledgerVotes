@@ -64,7 +64,7 @@ export default function FinalResults() {
               transition={{ type: 'spring', stiffness: 200, damping: 15 }}
               className="inline-block mb-4"
             >
-              <div className="bg-gradient-to-br from-yellow-400 to-yellow-600 p-6 rounded-2xl shadow-2xl">
+              <div className="bg-linear-to-br from-yellow-400 to-yellow-600 p-6 rounded-2xl shadow-2xl">
                 <Trophy className="w-16 h-16 text-white" />
               </div>
             </motion.div>
