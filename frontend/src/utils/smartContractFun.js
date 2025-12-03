@@ -287,7 +287,7 @@ const CONTRACT_ABI = [
 
 // Network configuration
 const CAMP_NETWORK = {
-  chainId: "0x1CBD00104A",
+  chainId: "0x1CBC67C35A",
   chainName: "Camp Network Basecamp",
   nativeCurrency: {
     name: "CAMP",
