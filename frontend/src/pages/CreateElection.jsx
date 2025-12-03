@@ -5,10 +5,20 @@ import { ArrowLeft, ArrowRight, Plus, Trash2 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Button from '../components/Button';
 import StepProgress from '../components/StepProgress';
+import { 
+  createElection, 
+  addCandidate as addCandidateToContract,
+  getElectionDetails,
+  getCandidateCount,
+  isCurrentUserAdmin,
+  checkAdmin
+} from '../utils/smartContractFun';
 
 export default function CreateElection() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [createdElectionId, setCreatedElectionId] = useState(null);
 
   const [electionData, setElectionData] = useState({
     title: '',
@@ -54,25 +64,135 @@ export default function CreateElection() {
 
   const addCandidate = () => {
     if (currentCandidate.name && currentPosition.title) {
-      setCurrentPosition({
+      const updatedPosition = {
         ...currentPosition,
         candidates: [...currentPosition.candidates, { ...currentCandidate }],
+      };
+      
+      // Update the position in the electionData array
+      const updatedPositions = electionData.positions.map(pos => 
+        pos.title === currentPosition.title ? updatedPosition : pos
+      );
+      
+      setElectionData({
+        ...electionData,
+        positions: updatedPositions,
       });
+      
+      setCurrentPosition(updatedPosition);
       setCurrentCandidate({ name: '', party: '', bio: '' });
     }
   };
 
-  const handleSubmit = () => {
-    navigate('/admin');
+  const calculateTimeDifferences = () => {
+    const now = new Date();
+    const startDate = new Date(electionData.startDate);
+    const endDate = new Date(electionData.endDate);
+    
+    // Calculate minutes from now to start
+    const startDelayMinutes = Math.floor((startDate - now) / (1000 * 60));
+    
+    // Calculate duration in minutes
+    const durationMinutes = Math.floor((endDate - startDate) / (1000 * 60));
+    
+    return {
+      startDelayMinutes: Math.max(0, startDelayMinutes), // Ensure non-negative
+      durationMinutes: Math.max(1, durationMinutes) // Ensure at least 1 minute
+    };
   };
+
+const handleSubmit = async () => {
+    try {
+      setIsSubmitting(true);
+
+      // Validate required fields
+      if (!electionData.title || !electionData.description) {
+        alert('Please fill in election title and description');
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (electionData.positions.length === 0) {
+        alert('Please add at least one position');
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!electionData.startDate || !electionData.endDate) {
+        alert('Please set start and end dates');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Calculate time parameters
+      const { startDelayMinutes, durationMinutes } = calculateTimeDifferences();
+
+      // Create full description with organization info
+      const fullDescription = electionData.organization 
+        ? `${electionData.description} | Organization: ${electionData.organization}`
+        : electionData.description;
+
+      console.log('Creating election with params:', {
+        title: electionData.title,
+        description: fullDescription,
+        durationMinutes,
+        startDelayMinutes
+      });
+
+      // Step 1: Create the election on the blockchain
+      const result = await createElection(
+        electionData.title,
+        fullDescription,
+        durationMinutes,
+        startDelayMinutes
+      );
+
+      console.log('Election created:', result);
+
+      const electionId = result.electionId;
+      setCreatedElectionId(electionId);
+
+      // Step 2: Add all candidates for all positions
+      // Since the contract treats each candidate as part of a single election,
+      // we'll add all candidates with their position info in the name
+      for (const position of electionData.positions) {
+        if (position.candidates && position.candidates.length > 0) {
+          for (const candidate of position.candidates) {
+            // Format: "Position: Name (Party)" or "Position: Name"
+            const candidateName = candidate.party 
+              ? `${position.title}: ${candidate.name} (${candidate.party})`
+              : `${position.title}: ${candidate.name}`;
+            
+            console.log(`Adding candidate: ${candidateName} to election ${electionId}`);
+            
+            // Use the renamed import here
+            await addCandidateToContract(electionId, candidateName);
+            
+            // Small delay between transactions to avoid nonce issues
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
+      }
+
+      alert(`Election created successfully! Election ID: ${electionId}`);
+      
+      // Navigate to admin page or election details
+      navigate('/admin');
+      
+    } catch (err) {
+      console.error('Error creating election:', err);
+      alert(`Error creating election: ${err.message || err}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
 
   return (
     <div className="min-h-screen bg-slate-50">
-     
-
       <div className="max-w-4xl mx-auto px-4 py-12">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-navy-900 mb-2">Create New Election</h1>
+          <h1 className="text-4xl font-bold text-green-900 mb-2">Create New Election</h1>
           <p className="text-slate-600">Follow the steps to set up your election</p>
         </div>
 
@@ -161,7 +281,7 @@ export default function CreateElection() {
                     </div>
                     <Button onClick={addPosition} className="flex items-center space-x-2">
                       <Plus className="w-4 h-4" />
-                      <span>Add Position</span>
+                      <span className='text-green-600'>Add Position</span>
                     </Button>
                   </div>
 
@@ -176,7 +296,7 @@ export default function CreateElection() {
                               const newPositions = electionData.positions.filter((_, i) => i !== index);
                               setElectionData({ ...electionData, positions: newPositions });
                             }}
-                            className="text-red-500 hover:text-red-700"
+                            className="text-red-500 hover:text-red-700 "
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -250,7 +370,7 @@ export default function CreateElection() {
                       </div>
                       <Button onClick={addCandidate} className="flex items-center space-x-2">
                         <Plus className="w-4 h-4" />
-                        <span>Add Candidate</span>
+                        <span className='text-green-600'>Add Candidate</span>
                       </Button>
 
                       {currentPosition.candidates?.length > 0 && (
@@ -331,7 +451,7 @@ export default function CreateElection() {
                       <h3 className="font-bold text-navy-800 mb-2">Schedule</h3>
                       <p className="text-slate-600">
                         {electionData.startDate && electionData.endDate
-                          ? `${new Date(electionData.startDate).toLocaleDateString()} - ${new Date(electionData.endDate).toLocaleDateString()}`
+                          ? `${new Date(electionData.startDate).toLocaleString()} - ${new Date(electionData.endDate).toLocaleString()}`
                           : 'Not set'}
                       </p>
                     </div>
@@ -345,27 +465,30 @@ export default function CreateElection() {
             <Button
               variant="outline"
               onClick={prevStep}
-              disabled={currentStep === 0}
+              disabled={currentStep === 0 || isSubmitting}
               className="flex items-center space-x-2"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Previous</span>
+              <span className='text-green-600'>Previous</span>
             </Button>
 
             {currentStep < steps.length - 1 ? (
               <Button
                 onClick={nextStep}
+                disabled={isSubmitting}
                 className="flex items-center space-x-2"
               >
-                <span>Next</span>
+                <span className='text-green-600'>Next</span>
                 <ArrowRight className="w-4 h-4" />
               </Button>
             ) : (
               <Button
                 variant="secondary"
                 onClick={handleSubmit}
+                disabled={isSubmitting}
+                className='text-green-600'
               >
-                Create Election
+                {isSubmitting ? 'Creating Election...' : 'Create Election'}
               </Button>
             )}
           </div>

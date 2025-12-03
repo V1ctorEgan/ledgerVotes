@@ -66,10 +66,11 @@ export default function AdminDashboard() {
             <Button
               variant="primary"
               onClick={() => navigate('/admin/election/create')}
-              className="flex items-center space-x-2 mt-4 md:mt-0"
+              className="flex items-center space-x-2 mt-4 md:mt-0 text-green-400"
             >
               <Plus className="w-5 h-5" />
-              <span>Create New Election</span>
+              
+              <span className='text-green-400 '>Create New Election</span>
             </Button>
           </div>
 
@@ -81,7 +82,7 @@ export default function AdminDashboard() {
                 onClick={() => setFilter(status)}
                 className={`px-4 py-2 rounded-md font-medium transition-all capitalize ${
                   filter === status
-                    ? 'bg-navy-600 text-white'
+                    ? 'bg-navy-600 text-green-700'
                     : 'text-slate-600 hover:bg-slate-100'
                 }`}
               >

@@ -4,6 +4,8 @@ import { Vote, Lock,Wallet ,  ContactIcon,
   WorkflowIcon, } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { connectWallet } from '../utils/smartContractFun';
+ import logo from "../assets/logo.png"
 export default function Navbar() {
 
   let Navigate = useNavigate()
@@ -16,9 +18,15 @@ export default function Navbar() {
 ];
 
 
-let handleConnect = ()=>{
-
-  Navigate('/choose')
+let handleConnect = async () => {
+  try {
+    const account = await connectWallet();
+    console.log('Connected account:', account);
+    Navigate('/choose');
+  } catch (error) {
+    console.error('Connection failed:', error);
+    alert('Failed to connect wallet: ' + error.message);
+  }
 }
 
 
@@ -29,8 +37,9 @@ let handleConnect = ()=>{
       <div className="max-w-7xl mx-auto  px-4 sm:px-6 py-2 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <Link to="/" className="flex items-center space-x-2">
-            <div className="bg-navy-600 p-2 rounded-lg">
-              <Vote className="w-5 h-5 text-white" />
+            <div className="bg-navy-600 p-2 rounded-lg  ">
+              {/* <Vote className="w-5 h-5 text-white" /> */}
+              <img src={logo} alt="LedgerVote Logo" className="w-10 h-10"  />
             </div>
             <span className="text-2xl font-bold text-navy-800">LedgerVote</span>
           </Link>
