@@ -8,12 +8,24 @@ import Lottie from 'lottie-react';
 import Balloting from '../Balloting.json'
 import AnimationStack from '../components/AnimationStack';
 import InfiniteDeck from '../components/InfiniteDeck';
-
+import { connectWallet } from '../utils/smartContractFun';
 import RotatingText from '../components/RotatingText';
 import ProblemStack from '../components/ProblemStack';
 
 export default function LandingPage() {
   const navigate = useNavigate();
+    const handleConnect = async () => {
+      try {
+        
+        const connectedAccount = await connectWallet();
+        console.log('Connected account:', connectedAccount);
+        navigate('/choose');
+      } catch (error) {
+        console.error('Connection failed:', error);
+        alert('Failed to connect wallet: ' + error.message);
+      } finally {
+      }
+    };
 
   const features = [
     {
@@ -113,7 +125,7 @@ export default function LandingPage() {
     <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        // onClick={onConnect}
+        onClick={handleConnect}
         className="group relative px-8 py-3 accent mx-10 flex justify-center items-center text-white rounded-2xl font-bold text-md shadow-[0_0_40px_rgba(6,182,212,0.4)] overflow-hidden"
       >
         <span className="relative z-10 flex items-center gap-2 text-center">
