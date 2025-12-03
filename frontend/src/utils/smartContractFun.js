@@ -328,38 +328,87 @@ const getReadOnlyContract = () => {
  */
 export const connectWallet = async () => {
   try {
+    // Check if MetaMask is installed
     if (typeof window.ethereum === "undefined") {
-      throw new Error("Please install MetaMask!");
+      throw new Error("Please install MetaMask to use this app!");
     }
 
+    // Request account access
     const accounts = await window.ethereum.request({
       method: "eth_requestAccounts",
     });
 
-    const chainId = await window.ethereum.request({ method: "eth_chainId" });
+    if (!accounts || accounts.length === 0) {
+      throw new Error("No accounts found. Please unlock MetaMask.");
+    }
 
-    if (chainId !== CAMP_NETWORK.chainId) {
+    // Get current chain ID
+    const currentChainId = await window.ethereum.request({
+      method: "eth_chainId",
+    });
+
+    console.log("Current chain:", currentChainId);
+    console.log("Target chain:", CAMP_NETWORK.chainId);
+
+    // Compare chain IDs (case-insensitive)
+    if (currentChainId.toLowerCase() !== CAMP_NETWORK.chainId.toLowerCase()) {
+      console.log("Wrong network, switching...");
+
       try {
+        // Try to switch to Camp Network
         await window.ethereum.request({
           method: "wallet_switchEthereumChain",
           params: [{ chainId: CAMP_NETWORK.chainId }],
         });
+        console.log("Switched to Camp Network");
       } catch (switchError) {
-        if (switchError.code === 4902) {
-          await window.ethereum.request({
-            method: "wallet_addEthereumChain",
-            params: [CAMP_NETWORK],
-          });
+        console.log("Switch error:", switchError);
+
+        // If the network doesn't exist, add it
+        if (switchError.code === 4902 || switchError.code === -32603) {
+          console.log("Network not found, adding...");
+          try {
+            await window.ethereum.request({
+              method: "wallet_addEthereumChain",
+              params: [CAMP_NETWORK],
+            });
+            console.log("Camp Network added successfully");
+          } catch (addError) {
+            console.error("Error adding network:", addError);
+            throw new Error(
+              "Failed to add Camp Network. Please add it manually in MetaMask."
+            );
+          }
         } else {
           throw switchError;
         }
       }
     }
 
+    // Verify we're on the correct network after switch
+    const finalChainId = await window.ethereum.request({
+      method: "eth_chainId",
+    });
+
+    if (finalChainId.toLowerCase() !== CAMP_NETWORK.chainId.toLowerCase()) {
+      throw new Error("Please switch to Camp Network Basecamp in MetaMask");
+    }
+
+    console.log("Connected successfully:", accounts[0]);
     return accounts[0];
   } catch (error) {
-    console.error("Error connecting wallet:", error);
-    throw error;
+    console.error("Connection error:", error);
+
+    // User-friendly error messages
+    if (error.code === 4001) {
+      throw new Error(
+        "Connection rejected. Please approve the connection in MetaMask."
+      );
+    } else if (error.code === -32002) {
+      throw new Error("Connection request pending. Please check MetaMask.");
+    } else {
+      throw error;
+    }
   }
 };
 
