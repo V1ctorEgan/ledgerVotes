@@ -97,17 +97,16 @@ export default function LedgeVotesStack() {
                   {cards[step].button}
                 </button>
               </div>
-
-              {/* Right side animation */}
+{/* 
+          
               <div className="flex-1 h-full flex items-center justify-center rounded-xl bg-green-50 p-4">
                 <div className="w-60 h-60 opacity-80">
-                  {/* Replace with real animation files */}
-                  {/* <Lottie animationData={require(cards[step].lottie)} loop /> */}
+               
                   <div className="w-full h-full rounded-xl border border-green-200 flex items-center justify-center text-green-500">
                     Animation
                   </div>
                 </div>
-              </div>
+              </div> */}
                              <button
                   onClick={() => {
                     if (step === cards.length - 1) setStep(0);

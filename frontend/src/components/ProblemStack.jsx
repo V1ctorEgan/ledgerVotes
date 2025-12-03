@@ -43,8 +43,13 @@ export default function ProblemStack(){
   return (
     <section className="relative w-full py-24 bg-gradient-to-b from-white to-brand-50">
       <div className=" mx-auto px-6 space-y-6">
-        <h2 className="text-3xl font-bold text-center text-brand-700">How LedgeVotes Works</h2>
-        <p className="text-center text-slate-600 max-w-2xl mx-auto">Connect a wallet, create or join elections securely, and track live results with absolute transparency.</p>
+           <h2 className="text-4xl font-bold text-center text-slate-900 mb-4">
+          Problems We Solve
+        </h2>
+        <p className="text-center text-slate-600 max-w-2xl mx-auto mb-16">
+          LedgeVote eliminates the core problems that destroy trust in
+          traditional elections.
+        </p>
 
         <div className="space-y-6 mt-12">
           {features.map((f, idx) => (
